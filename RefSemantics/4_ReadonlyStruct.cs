@@ -1,6 +1,4 @@
-// ReSharper disable MemberCanBePrivate.Global
-// ReSharper disable ArrangeAccessorOwnerBody
-// ReSharper disable InconsistentNaming
+//#define CompileError
 
 using Xunit;
 
@@ -8,9 +6,9 @@ namespace RefSemantics
 {
     public class ReadonlyStruct
     {
-        public readonly struct Point
+        private readonly struct Point
         {
-            // Compiler enforces readonly here
+            // Compiler enforces readonly here.
             public readonly float X;
             public readonly float Y;
 
@@ -20,31 +18,29 @@ namespace RefSemantics
                 Y = y;
             }
 
-            // Compile error - immutable!
-//            public void TranslateInPlace(float dx, float dy)
-//            {
-//                X += dx;
-//                Y += dy;
-//            }
-
-            private static readonly Point _origin = new Point(0, 0);
-
-            public static ref readonly Point Origin
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancy", "RCS1163:Unused parameter.", Justification = "<Pending>")]
+            public void TranslateInPlace(float dx, float dy)
             {
-                get { return ref _origin; }
+#if CompileError
+                X += dx; /* Compile error - immutable! */
+                Y += dy;
+#endif
             }
+
+            private static readonly Point origin = new Point(0, 0);
+
+            public static ref readonly Point Origin => ref origin;
         }
 
         [Fact]
         public void Non_ref_assignment_makes_copy()
         {
-            // This is a copy, but we can't do anything dangerous anyway
-            // It's immutable!
+            // This is a copy, but we can't do anything dangerous anyway. It's immutable!
             var origin = Point.Origin;
 
-            // Compile error
-            //origin.X = 42;
-
+#if CompileError
+            origin.X = 42; /* Compile error! */
+#endif
             Assert.Equal(0, origin.X);
         }
 
@@ -53,13 +49,12 @@ namespace RefSemantics
         {
             ref readonly var origin = ref Point.Origin;
 
-            // Compile error
-            //origin.X = 42;
+#if CompileError
+            origin.X = 42; /* Compile error! */
+#endif
 
-            // Method calls are on original value
-            // But the method can't do anything dangerous
-            // It's immutable!
-//            origin.TranslateInPlace(42, 0);
+            // Method calls are on original value, but the method can't do anything dangerous. It's immutable!
+            origin.TranslateInPlace(42, 0);
 
             Assert.Equal(0, origin.X);
         }

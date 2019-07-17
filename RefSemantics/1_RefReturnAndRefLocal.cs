@@ -1,14 +1,10 @@
-// ReSharper disable MemberCanBePrivate.Global
-// ReSharper disable NotAccessedField.Global
-// ReSharper disable SuggestVarOrType_SimpleTypes
-
 using Xunit;
 
 namespace RefSemantics
 {
     public class RefReturnAndRefLocal
     {
-        public struct Point
+        private struct Point
         {
             public float X;
             public float Y;
@@ -20,24 +16,12 @@ namespace RefSemantics
             }
         }
 
-        public class Enemy
+        private class Enemy
         {
-            private Point _location;
-
-            public Enemy(Point location)
-            {
-                _location = location;
-            }
-
-            public Point GetLocation()
-            {
-                return _location;
-            }
-
-            public ref Point GetLocationByRef()
-            {
-                return ref _location;
-            }
+            private Point location;
+            public Point Location => location;
+            public Enemy(Point location) => this.location = location;
+            public ref Point GetLocationByRef() => ref location;
         }
 
         [Fact]
@@ -46,11 +30,11 @@ namespace RefSemantics
             var enemy = new Enemy(new Point(10, 10));
 
             // This is a copy!
-            Point location = enemy.GetLocation();
+            var location = enemy.Location;
             location.X = 12;
 
             Assert.Equal(12, location.X);
-            Assert.Equal(10, enemy.GetLocation().X);
+            Assert.Equal(10, enemy.Location.X);
         }
 
         [Fact]
@@ -59,7 +43,7 @@ namespace RefSemantics
             var enemy = new Enemy(new Point(10, 10));
 
             // This is a copy, even returned by ref!
-            Point copy = enemy.GetLocationByRef();
+            var copy = enemy.GetLocationByRef();
             copy.X = 12;
 
             Assert.Equal(12, copy.X);
@@ -71,11 +55,12 @@ namespace RefSemantics
         {
             var enemy = new Enemy(new Point(10, 10));
 
-            // Reference, not copy
+            // Reference, not copy.
             ref var location = ref enemy.GetLocationByRef();
             location.X = 12;
 
-            Assert.Equal(12, enemy.GetLocation().X);
+            Assert.Equal(12, location.X);
+            Assert.Equal(12, enemy.Location.X);
         }
 
         [Fact]
@@ -85,7 +70,7 @@ namespace RefSemantics
 
             enemy.GetLocationByRef() = new Point(42, 42);
 
-            Assert.Equal(42, enemy.GetLocation().X);
+            Assert.Equal(42, enemy.Location.X);
         }
     }
 }

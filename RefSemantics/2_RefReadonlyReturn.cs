@@ -1,6 +1,4 @@
-// ReSharper disable ArrangeAccessorOwnerBody
-// ReSharper disable InconsistentNaming
-// ReSharper disable MemberCanBePrivate.Global
+//#define CompileError
 
 using Xunit;
 
@@ -8,7 +6,7 @@ namespace RefSemantics
 {
     public class RefReadonlyReturn
     {
-        public struct Point
+        private struct Point
         {
             public float X;
             public float Y;
@@ -25,23 +23,17 @@ namespace RefSemantics
                 Y += dy;
             }
 
+            private static Point origin = new Point(0, 0);
+            public static ref Point Origin => ref origin;
 
-            public static ref Point Origin => ref _origin;
-            private static Point _origin = new Point(0, 0);
-
-
-
-            public static ref readonly Point ReadonlyOrigin
-            {
-                get { return ref _readonlyOrigin; }
-            }
-            private static readonly Point _readonlyOrigin = new Point(0, 0);
+            private static readonly Point readonlyOrigin = new Point(0, 0);
+            public static ref readonly Point ReadonlyOrigin => ref readonlyOrigin;
         }
 
         [Fact]
         public void Non_ref_variable_receives_copy()
         {
-            // Receives copy, not reference. This won't modify Point.Origin
+            // Receives copy, not reference. This won't modify 'Point.Origin'.
             var copy = Point.Origin;
             copy.X = 42;
 
@@ -52,7 +44,7 @@ namespace RefSemantics
         [Fact]
         public void Non_readonly_ref_variable_modifies_shared_state()
         {
-            // Non readonly reference! Modifies shared state
+            // Non readonly reference! Modifies shared state.
             ref var origin = ref Point.Origin;
             origin.X = 42;
 
@@ -63,10 +55,9 @@ namespace RefSemantics
         public void Ref_readonly_cannot_be_modified()
         {
             ref readonly var origin = ref Point.ReadonlyOrigin;
-
-            // Compile error!
-//            origin.X = 42;
-
+#if CompileError
+            origin.X = 42; /* Compile error! */
+#endif
             Assert.Equal(0, origin.X);
             Assert.Equal(0, Point.ReadonlyOrigin.X);
         }
@@ -76,17 +67,14 @@ namespace RefSemantics
         {
             ref readonly var origin = ref Point.ReadonlyOrigin;
 
-            // Method call happens on defensive copy
+            // Method call happens on defensive copy.
             origin.TranslateInPlace(42, 0);
 
             Assert.Equal(0, Point.ReadonlyOrigin.X);
             Assert.Equal(0, origin.X);
         }
 
-        public RefReadonlyReturn()
-        {
-            // Reset everything between tests. Ignore me! ☺️
-            Point.Origin.X = 0;
-        }
+        // Reset everything between tests. Ignore me! ☺️
+        public RefReadonlyReturn() => Point.Origin.X = 0;
     }
 }
